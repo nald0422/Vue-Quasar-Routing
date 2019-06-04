@@ -19,9 +19,6 @@
             <q-menu>
               <q-list dense style="min-width: 100px">
                 <q-item clickable v-close-popup>
-                  <q-item-section @click="prompt = true">Login</q-item-section>
-                </q-item>
-                <q-item clickable v-close-popup>
                   <q-item-section>New</q-item-section>
                 </q-item>
 
@@ -55,7 +52,7 @@
                 <q-separator/>
 
                 <q-item clickable v-close-popup>
-                  <q-item-section @click="$router.replace('/login')">Quit</q-item-section>
+                  <q-item-section @click="$router.replace('/login')">Logout</q-item-section>
                 </q-item>
               </q-list>
             </q-menu>
@@ -87,7 +84,7 @@
         <q-page class="q-pa-md">
           <div class="q-gutter-sm">
             <q-table
-              title="Treats"
+              title="Person"
               :data="data"
               :columns="columns"
               row-key="id"
@@ -98,20 +95,22 @@
                 <q-btn
                   flat
                   dense
-                  color="primary"
+                  color="secondary"
                   :disable="loading"
-                  label="Add row"
-                  @click="addRow"
+                  label="Add Person"
+                  @click="createDialog=true"
                 />
                 <q-btn
                   class="on-right"
                   flat
                   dense
-                  color="primary"
+                  color="grey-10"
                   :disable="loading"
-                  label="Remove row"
-                  @click="removeRow"
-                />
+                  label="Load"
+                  @click="executeView"
+                >
+                  <q-icon name="refresh"></q-icon>
+                </q-btn>
                 <q-space/>
                 <q-input borderless dense debounce="300" color="primary" v-model="filter">
                   <template v-slot:append>
@@ -119,61 +118,147 @@
                   </template>
                 </q-input>
               </template>
+              <template v-slot:body="props">
+                <q-tr :props="props">
+                  <q-td key="personId" :props="props">{{ props.row.personId }}</q-td>
+                  <q-td key="personName" :props="props">{{ props.row.personName }}</q-td>
+                  <q-td key="personAge" :props="props">{{ props.row.personAge }}</q-td>
+                  <q-td key="action" :props="props" class="q-gutter-xs" style="min-width: 140px;">
+                    <q-btn
+                      color="info"
+                      class="btn-action"
+                      icon="visibility"
+                      size="sm"
+                      @click="onView(props.row)"
+                    />
+                  </q-td>
+                </q-tr>
+              </template>
             </q-table>
           </div>
         </q-page>
       </q-page-container>
     </q-layout>
-    <div class="col-6">
-      <q-dialog v-model="prompt" persistent>
-        <q-card style="min-width: 400px" class="q-gutter-md">
-          <form @submit.prevent="simulateSubmit" class="q-pa-md">
-            <q-card-section>
-              <q-input
+
+    <q-dialog v-model="prompt" persistent>
+      <q-card style="min-width: 450px" class="q-gutter-">
+        <form @submit.prevent="simulateSubmit">
+          <q-card-section>
+            <q-input
+            filled
+            required
+            v-model="input.user"
+            label="User"
+            :dense="dense"
+            submitting: false
+            @keyup.enter="prompt = false"
+            />
+          </q-card-section>
+          <q-card-section>
+            <q-input
               filled
               required
-              v-model="input.user"
-              label="User"
+              v-model="input.password"
+              label="Password"
               :dense="dense"
-              submitting: false
               @keyup.enter="prompt = false"
-              />
-            </q-card-section>
-            <q-card-section>
-              <q-input
-                filled
-                required
-                v-model="input.password"
-                label="Password"
-                :dense="dense"
-                @keyup.enter="prompt = false"
-              />
-            </q-card-section>
-            <q-card-actions align="right" class="text-primary">
-              <q-btn
-                type="button"
-                @click="executeView()"
-                class="glossy"
-                color="red-8"
-                label="Cancel"
-              ></q-btn>
-              <q-btn
-                type="submit"
-                :loading="submitting"
-                @click="executeCreate()"
-                class="glossy"
-                color="green-8"
-                label="Login"
-              >
-                <template v-slot:loading>
-                  <q-spinner-facebook/>
-                </template>
-              </q-btn>
-            </q-card-actions>
-          </form>
-        </q-card>
-      </q-dialog>
-    </div>
+            />
+          </q-card-section>
+          <q-card-actions align="right" class="text-primary">
+            <q-btn type="button" class="glossy" color="red-8" label="Cancel"></q-btn>
+            <q-btn
+              type="submit"
+              :loading="submitting"
+              @click="prompt = false"
+              class="glossy"
+              color="green-8"
+              label="Login"
+            >
+              <template v-slot:loading>
+                <q-spinner-facebook/>
+              </template>
+            </q-btn>
+          </q-card-actions>
+        </form>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog
+      v-model="createDialog"
+      persistent
+      transition-show="flip-down"
+      transition-hide="flip-up"
+    >
+      <q-card style="width: 500px; max-width: 80vw;">
+        <q-card-section class="bg-green">
+          <div class="text-h6 text-white">Create Person</div>
+        </q-card-section>
+        <q-card-section style="padding-top: 16px;">
+          <q-input v-model="Person.personId" filled type="text" hint="Person ID"/>
+          <br>
+          <q-input v-model="Person.personName" filled autogrow hint="Name"/>
+          <br>
+          <q-input v-model="Person.personAge" filled autogrow hint="Age"/>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat :loading="loading">
+            Create
+            <template v-slot:loading>
+              <q-spinner-facebook class="on-left"/>
+            </template>
+          </q-btn>
+          <q-btn flat label="Close" v-close-popup/>
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="viewDialog" persistent>
+      <q-card style="min-width: 400px" class="q-gutter-md">
+        <form @submit.prevent="simulateSubmit" class="q-pa-md">
+          <q-card-section>
+            <q-field label="Person Id" stack-label v-model="this.Person.personId">
+              <template v-slot:control>
+                <div class="self-center full-width no-outline" tabindex="0">{{ Person.personId }}</div>
+              </template>
+            </q-field>
+          </q-card-section>
+          <q-card-section>
+            <q-field label="Person Name" stack-label v-model="this.Person.personName">
+              <template v-slot:control>
+                <div class="self-center full-width no-outline" tabindex="0">{{ Person.personName }}</div>
+              </template>
+            </q-field>
+          </q-card-section>
+          <q-card-section>
+            <q-field label="Person Age" stack-label v-model="this.Person.personAge">
+              <template v-slot:control>
+                <div class="self-center full-width no-outline" tabindex="0">{{ Person.personAge }}</div>
+              </template>
+            </q-field>
+          </q-card-section>
+          <q-card-actions align="right" class="text-primary">
+            <q-btn
+              type="button"
+              class="glossy"
+              color="positive"
+              label="Save"
+              disabled
+              @click="viewDialog=false"
+            ></q-btn>
+            <q-btn
+              type="button"
+              class="glossy"
+              color="primary"
+              label="Done"
+              @click="viewDialog=false"
+            ></q-btn>
+          </q-card-actions>
+          <!-- <p>
+              <router-link to="/home">Proceed</router-link>
+          </p>-->
+        </form>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -186,13 +271,23 @@ export default {
       alert: false,
       confirm: false,
       prompt: false,
+      createDialog: false,
+      viewDialog: false,
+      showing: false,
       loading: false,
       filter: "",
       rowCount: 2,
+      position: "",
 
       input: {
         user: "",
         password: ""
+      },
+
+      Person: {
+        personId: "",
+        personName: "",
+        personAge: ""
       },
 
       AuthorizationModel: {
@@ -213,259 +308,40 @@ export default {
 
       columns: [
         {
-          name: "desc",
-          required: true,
-          label: "Dessert (100g serving)",
+          name: "personId",
           align: "left",
-          field: row => row.name,
-          format: val => `${val}`,
+          label: "Person Id",
+          field: "personId",
           sortable: true
         },
         {
-          name: "calories",
-          align: "center",
-          label: "Calories",
-          field: "calories",
+          name: "personName",
+          align: "left",
+          label: "Name",
+          field: "personName",
           sortable: true
         },
-        { name: "fat", label: "Fat (g)", field: "fat", sortable: true },
-        { name: "carbs", label: "Carbs (g)", field: "carbs" },
-        { name: "protein", label: "Protein (g)", field: "protein" },
-        { name: "sodium", label: "Sodium (mg)", field: "sodium" },
         {
-          name: "calcium",
-          label: "Calcium (%)",
-          field: "calcium",
-          sortable: true,
-          sort: (a, b) => parseInt(a, 10) - parseInt(b, 10)
+          name: "personAge",
+          align: "left",
+          label: "Age",
+          field: "personAge",
+          sortable: true
         },
-        {
-          name: "iron",
-          label: "Iron (%)",
-          field: "iron",
-          sortable: true,
-          sort: (a, b) => parseInt(a, 10) - parseInt(b, 10)
-        }
+        { name: "action", align: "center", label: "Action" }
       ],
 
-      data: [
-        {
-          id: 1,
-          name: "Frozen Yogurt",
-          calories: 159,
-          fat: 6.0,
-          carbs: 24,
-          protein: 4.0,
-          sodium: 87,
-          calcium: "14%",
-          iron: "1%"
-        },
-        {
-          id: 2,
-          name: "Ice cream sandwich",
-          calories: 237,
-          fat: 9.0,
-          carbs: 37,
-          protein: 4.3,
-          sodium: 129,
-          calcium: "8%",
-          iron: "1%"
-        },
-        {
-          id: 3,
-          name: "Eclair",
-          calories: 262,
-          fat: 16.0,
-          carbs: 23,
-          protein: 6.0,
-          sodium: 337,
-          calcium: "6%",
-          iron: "7%"
-        },
-        {
-          id: 4,
-          name: "Cupcake",
-          calories: 305,
-          fat: 3.7,
-          carbs: 67,
-          protein: 4.3,
-          sodium: 413,
-          calcium: "3%",
-          iron: "8%"
-        },
-        {
-          id: 5,
-          name: "Gingerbread",
-          calories: 356,
-          fat: 16.0,
-          carbs: 49,
-          protein: 3.9,
-          sodium: 327,
-          calcium: "7%",
-          iron: "16%"
-        },
-        {
-          id: 6,
-          name: "Jelly bean",
-          calories: 375,
-          fat: 0.0,
-          carbs: 94,
-          protein: 0.0,
-          sodium: 50,
-          calcium: "0%",
-          iron: "0%"
-        },
-        {
-          id: 7,
-          name: "Lollipop",
-          calories: 392,
-          fat: 0.2,
-          carbs: 98,
-          protein: 0,
-          sodium: 38,
-          calcium: "0%",
-          iron: "2%"
-        },
-        {
-          id: 8,
-          name: "Honeycomb",
-          calories: 408,
-          fat: 3.2,
-          carbs: 87,
-          protein: 6.5,
-          sodium: 562,
-          calcium: "0%",
-          iron: "45%"
-        },
-        {
-          id: 9,
-          name: "Donut",
-          calories: 452,
-          fat: 25.0,
-          carbs: 51,
-          protein: 4.9,
-          sodium: 326,
-          calcium: "2%",
-          iron: "22%"
-        },
-        {
-          id: 10,
-          name: "KitKat",
-          calories: 518,
-          fat: 26.0,
-          carbs: 65,
-          protein: 7,
-          sodium: 54,
-          calcium: "12%",
-          iron: "6%"
-        }
-      ],
-      original: [
-        {
-          name: "Frozen Yogurt",
-          calories: 159,
-          fat: 6.0,
-          carbs: 24,
-          protein: 4.0,
-          sodium: 87,
-          calcium: "14%",
-          iron: "1%"
-        },
-        {
-          name: "Ice cream sandwich",
-          calories: 237,
-          fat: 9.0,
-          carbs: 37,
-          protein: 4.3,
-          sodium: 129,
-          calcium: "8%",
-          iron: "1%"
-        },
-        {
-          name: "Eclair",
-          calories: 262,
-          fat: 16.0,
-          carbs: 23,
-          protein: 6.0,
-          sodium: 337,
-          calcium: "6%",
-          iron: "7%"
-        },
-        {
-          name: "Cupcake",
-          calories: 305,
-          fat: 3.7,
-          carbs: 67,
-          protein: 4.3,
-          sodium: 413,
-          calcium: "3%",
-          iron: "8%"
-        },
-        {
-          name: "Gingerbread",
-          calories: 356,
-          fat: 16.0,
-          carbs: 49,
-          protein: 3.9,
-          sodium: 327,
-          calcium: "7%",
-          iron: "16%"
-        },
-        {
-          name: "Jelly bean",
-          calories: 375,
-          fat: 0.0,
-          carbs: 94,
-          protein: 0.0,
-          sodium: 50,
-          calcium: "0%",
-          iron: "0%"
-        },
-        {
-          name: "Lollipop",
-          calories: 392,
-          fat: 0.2,
-          carbs: 98,
-          protein: 0,
-          sodium: 38,
-          calcium: "0%",
-          iron: "2%"
-        },
-        {
-          name: "Honeycomb",
-          calories: 408,
-          fat: 3.2,
-          carbs: 87,
-          protein: 6.5,
-          sodium: 562,
-          calcium: "0%",
-          iron: "45%"
-        },
-        {
-          name: "Donut",
-          calories: 452,
-          fat: 25.0,
-          carbs: 51,
-          protein: 4.9,
-          sodium: 326,
-          calcium: "2%",
-          iron: "22%"
-        },
-        {
-          name: "KitKat",
-          calories: 518,
-          fat: 26.0,
-          carbs: 65,
-          protein: 7,
-          sodium: 54,
-          calcium: "12%",
-          iron: "6%"
-        }
-      ]
+      data: []
     };
   },
 
   methods: {
+    onView(row) {
+      this.open("right");
+      this.Person.personId = row.personId;
+      this.Person.personName = row.personName;
+      this.Person.personAge = row.personAge;
+    },
     simulateSubmit() {
       this.submitting = true;
 
@@ -515,18 +391,22 @@ export default {
     },
 
     executeView() {
-      var url = "http://localhost:8080/Rest/webapi/staffs";
+      var url = "http://localhost:8080/Persons";
       axios
         .get(url, {
           method: "GET",
           headers: {
             "Content-type": "application/json; charset=UTF-8",
             "Access-Control-Allow-Origin": "*"
-            }
+          },
+
+          personId: this.Person.personId,
+          personName: this.Person.personName,
+          personAge: this.Person.personAge
         })
         .then(response => {
           console.log(JSON.stringify(response));
-          // this.data = response["data"];
+          this.data = response["data"];
         })
         .catch(error => console.log(error));
     },
@@ -555,13 +435,34 @@ export default {
         .catch(error => {
           console.log(error);
         });
+    },
+    open(position) {
+      this.position = position;
+      this.viewDialog = true;
     }
+  },
+  created() {
+    this.executeView();
+    console.log("created");
   }
 };
 </script>
 
-<style scoped>
-.q-card__section {
-  padding-left: 0px !important;
+<style scoped lang="stylus">
+// .q-card__section {
+//   padding-left: 0px !important;
+// }
+
+.btn-action {
+  width: 25px !important;
+}
+
+.q-card q-gutter-md {
+  margin: 16px;
+}
+
+.q-field__native.row {
+  padding-bottom: 0px;
+  padding-top: 8px;
 }
 </style>
