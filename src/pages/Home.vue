@@ -201,7 +201,7 @@
           <q-input v-model="Person.personAge" filled autogrow hint="Age"/>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat :loading="loading">
+          <q-btn flat :loading="loading" @click="executeCreate()">
             Create
             <template v-slot:loading>
               <q-spinner-facebook class="on-left"/>
@@ -289,7 +289,6 @@ export default {
         personName: "",
         personAge: ""
       },
-
       AuthorizationModel: {
         UserModel: {
           person_id: "",
@@ -413,27 +412,30 @@ export default {
 
     executeCreate() {
       this.loading = true;
-      var url = "http://192.168.2.9:3000/user/login ";
+      var url = "http://localhost:8080/Create";
+      const data = {
+        personId: this.Person.personId,
+        personName: this.Person.personName,
+        personAge: this.Person.personAge
+      };
       console.log(url);
-      // console.log(this.details.title)
-      // console.log(this.details.body)
-      // console.log(this.details.userId)
+      console.log(this.Person.personId);
+      console.log(this.Person.personName);
+      console.log(this.Person.personAge);
       axios
-        .post(url, {
-          method: "POST",
-          body: JSON.stringify({
-            username: "ZG9uYWxk",
-            password: "Zjk3YThkZWZkMDI5N2YxNDBiNjU0N2FkNTcxNGVkZWE="
-          }),
-          headers: {
-            "Content-type": "application/json; charset=UTF-8"
-          }
-        })
+        .post(url, data)
         .then(response => {
           console.log(response);
+          this.loading = false;
+          this.createDialog = false;
+        })
+        .then(response => {
+          this.alertSuccess = true;
         })
         .catch(error => {
           console.log(error);
+          this.loading = false;
+          this.alertFailure = true;
         });
     },
     open(position) {
@@ -450,9 +452,8 @@ export default {
 
 <style scoped lang="stylus">
 // .q-card__section {
-//   padding-left: 0px !important;
+// padding-left: 0px !important;
 // }
-
 .btn-action {
   width: 25px !important;
 }

@@ -158,7 +158,9 @@
         <q-card-section style="padding-top: 16px;">
           <p class="text-body2">
             Are you sure you want to delete the post "
-            <span class="text-deep-orange">{{ details.title }}</span>"?
+            <span
+              class="text-deep-orange"
+            >{{ details.title }}</span>"?
           </p>
         </q-card-section>
         <q-card-actions align="right">
@@ -353,6 +355,9 @@ export default {
           headers: {
             "Content-type": "application/json; charset=UTF-8"
           }
+        })
+        .then(request => {
+          console.logrequest;
         })
         .then(response => {
           console.log(response);
