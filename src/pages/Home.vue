@@ -86,7 +86,7 @@
             <q-table
               title="Person"
               :data="data"
-              :columns="columns"
+              :columns="columnsPerson"
               row-key="id"
               :filter="filter"
               :loading="loading"
@@ -184,13 +184,42 @@
     </q-dialog>
 
     <q-dialog
+      v-model="createChildrenDialog"
+      persistent
+      transition-show="flip-down"
+      transition-hide="flip-up"
+    >
+      <q-card style="width: 500px; max-width: 80vw;">
+        <q-card-section class="bg-blue">
+          <div class="text-h6 text-white">Create Children</div>
+        </q-card-section>
+        <q-card-section style="padding-top: 16px;">
+          <q-input v-model="Person.children.childId" filled type="text" hint="Child ID"/>
+          <br>
+          <q-input v-model="Person.children.childName" filled autogrow hint="Name"/>
+          <br>
+          <q-input v-model="Person.children.personAge" filled autogrow hint="Age"/>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat :loading="loading" @click="executeCreateChildren()">
+            Create
+            <template v-slot:loading>
+              <q-spinner-facebook class="on-left"/>
+            </template>
+          </q-btn>
+          <q-btn flat label="Close" v-close-popup/>
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog
       v-model="createDialog"
       persistent
       transition-show="flip-down"
       transition-hide="flip-up"
     >
       <q-card style="width: 500px; max-width: 80vw;">
-        <q-card-section class="bg-green">
+        <q-card-section class="bg-blue">
           <div class="text-h6 text-white">Create Person</div>
         </q-card-section>
         <q-card-section style="padding-top: 16px;">
@@ -201,7 +230,7 @@
           <q-input v-model="Person.personAge" filled autogrow hint="Age"/>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat :loading="loading" @click="executeCreate()">
+          <q-btn flat :loading="loading" @click="executeCreatePerson()">
             Create
             <template v-slot:loading>
               <q-spinner-facebook class="on-left"/>
@@ -213,49 +242,93 @@
     </q-dialog>
 
     <q-dialog v-model="viewDialog" persistent>
-      <q-card style="min-width: 400px" class="q-gutter-md">
+      <q-card style="min-width: 1000px" class="q-gutter-md">
         <form @submit.prevent="simulateSubmit" class="q-pa-md">
-          <q-card-section>
-            <q-field label="Person Id" stack-label v-model="this.Person.personId">
-              <template v-slot:control>
-                <div class="self-center full-width no-outline" tabindex="0">{{ Person.personId }}</div>
-              </template>
-            </q-field>
-          </q-card-section>
-          <q-card-section>
-            <q-field label="Person Name" stack-label v-model="this.Person.personName">
-              <template v-slot:control>
-                <div class="self-center full-width no-outline" tabindex="0">{{ Person.personName }}</div>
-              </template>
-            </q-field>
-          </q-card-section>
-          <q-card-section>
-            <q-field label="Person Age" stack-label v-model="this.Person.personAge">
-              <template v-slot:control>
-                <div class="self-center full-width no-outline" tabindex="0">{{ Person.personAge }}</div>
-              </template>
-            </q-field>
-          </q-card-section>
-          <q-card-actions align="right" class="text-primary">
-            <q-btn
-              type="button"
-              class="glossy"
-              color="positive"
-              label="Save"
-              disabled
-              @click="viewDialog=false"
-            ></q-btn>
-            <q-btn
-              type="button"
-              class="glossy"
-              color="primary"
-              label="Done"
-              @click="viewDialog=false"
-            ></q-btn>
-          </q-card-actions>
-          <!-- <p>
+          <div class="row">
+            <div class="col-sm-4" style="border-right: 1px solid #333;">
+              <span class="border border-right-0"></span>
+              <q-card-section style="width: 250px; max-width: 40vw;">
+                <q-field label="Person Id" stack-label v-model="this.Person.personId">
+                  <template v-slot:control>
+                    <div
+                      class="self-center full-width no-outline"
+                      tabindex="0"
+                    >{{ Person.personId }}</div>
+                  </template>
+                </q-field>
+                <!-- <q-card-section style="width: 250px; max-width: 40vw;"> -->
+                <q-field label="Person Name" stack-label v-model="this.Person.personName">
+                  <template v-slot:control>
+                    <div
+                      class="self-center full-width no-outline"
+                      tabindex="0"
+                    >{{ Person.personName }}</div>
+                  </template>
+                </q-field>
+                <q-field label="Person Age" stack-label v-model="this.Person.personAge">
+                  <template v-slot:control>
+                    <div
+                      class="self-center full-width no-outline"
+                      tabindex="0"
+                    >{{ Person.personAge }}</div>
+                  </template>
+                </q-field>
+              </q-card-section>
+            </div>
+
+            <!-- <p>
               <router-link to="/home">Proceed</router-link>
-          </p>-->
+            </p>-->
+            <div class="col-sm-8">
+              <template>
+                <div class="q-pa-md">
+                  <q-table
+                    class="my-sticky-column-table"
+                    title="Children"
+                    :data="data"
+                    :columns="columnsChild"
+                    row-key="name"
+                  >
+                    <template v-slot:top>
+                      <q-btn
+                        flat
+                        dense
+                        color="primary"
+                        :disable="loading"
+                        label="Add Child"
+                        @click="createChildrenDialog=true"
+                      >
+                        <q-icon name="add"></q-icon>
+                      </q-btn>
+                      <q-space/>
+                      <q-input borderless dense debounce="300" color="primary" v-model="filter">
+                        <template v-slot:append>
+                          <q-icon name="search"/>
+                        </template>
+                      </q-input>
+                    </template>
+                  </q-table>
+                </div>
+              </template>
+              <q-card-actions align="right" class="text-primary">
+                <q-btn
+                  type="button"
+                  class="glossy"
+                  color="positive"
+                  label="Save"
+                  disabled
+                  @click="viewDialog=false"
+                ></q-btn>
+                <q-btn
+                  type="button"
+                  class="glossy"
+                  color="primary"
+                  label="Done"
+                  @click="viewDialog=false"
+                ></q-btn>
+              </q-card-actions>
+            </div>
+          </div>
         </form>
       </q-card>
     </q-dialog>
@@ -272,12 +345,15 @@ export default {
       confirm: false,
       prompt: false,
       createDialog: false,
+      createChildrenDialog: false,
       viewDialog: false,
       showing: false,
       loading: false,
       filter: "",
       rowCount: 2,
       position: "",
+      dense: true,
+      disable: false,
 
       input: {
         user: "",
@@ -287,8 +363,22 @@ export default {
       Person: {
         personId: "",
         personName: "",
-        personAge: ""
+        personAge: "",
+        children: [
+          {
+            childId: "",
+            childName: "",
+            childAge: ""
+          }
+        ]
       },
+
+      children: {
+        childId: "",
+        childName: "",
+        childAge: ""
+      },
+
       AuthorizationModel: {
         UserModel: {
           person_id: "",
@@ -305,7 +395,7 @@ export default {
       submitting: false,
       dense: false,
 
-      columns: [
+      columnsPerson: [
         {
           name: "personId",
           align: "left",
@@ -328,6 +418,30 @@ export default {
           sortable: true
         },
         { name: "action", align: "center", label: "Action" }
+      ],
+
+      columnsChild: [
+        {
+          name: "childId",
+          align: "left",
+          label: "Child Id",
+          field: "childId",
+          sortable: true
+        },
+        {
+          name: "childName",
+          align: "left",
+          label: "Name",
+          field: "childName",
+          sortable: true
+        },
+        {
+          name: "childAge",
+          align: "left",
+          label: "Age",
+          field: "childAge",
+          sortable: true
+        }
       ],
 
       data: []
@@ -410,7 +524,7 @@ export default {
         .catch(error => console.log(error));
     },
 
-    executeCreate() {
+    executeCreatePerson() {
       this.loading = true;
       var url = "http://localhost:8080/Create";
       const data = {
@@ -431,6 +545,7 @@ export default {
         })
         .then(response => {
           this.alertSuccess = true;
+          this.executeView();
         })
         .catch(error => {
           console.log(error);
@@ -438,6 +553,37 @@ export default {
           this.alertFailure = true;
         });
     },
+
+    executeCreateChildren() {
+      this.loading = true;
+      var url = "http://localhost:8080/setChild/"+this.person_id;
+      const data = {
+        childId: this.children.childId,
+        childName: this.children.childName,
+        childAge: this.children.childAge
+      };
+      console.log(url);
+      console.log(this.children.childId);
+      console.log(this.children.childName);
+      console.log(this.children.childAge);
+      axios
+        .post(url, data)
+        .then(response => {
+          console.log(response);
+          this.loading = false;
+          this.createDialog = false;
+        })
+        .then(response => {
+          this.alertSuccess = true;
+          this.executeView();
+        })
+        .catch(error => {
+          console.log(error);
+          this.loading = false;
+          this.alertFailure = true;
+        });
+    },
+
     open(position) {
       this.position = position;
       this.viewDialog = true;
@@ -465,5 +611,31 @@ export default {
 .q-field__native.row {
   padding-bottom: 0px;
   padding-top: 8px;
+}
+
+.my-sticky-column-table {
+  specifying: max-width so the example can;
+  highlight: the sticky column on any browser window;
+}
+
+max-width 600px {
+  thead tr:first-child th:first-child {
+    background-color: #fff;
+    opacity: 1;
+  }
+
+  td:first-child {
+    background-color: #f5f5dc;
+  }
+
+  thead tr:first-child th:first-child, td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+  }
+}
+
+.mycontent-left {
+  border-right: 1px dashed #333;
 }
 </style>

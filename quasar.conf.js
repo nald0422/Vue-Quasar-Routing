@@ -58,7 +58,9 @@ module.exports = function (ctx) {
         'QSpinnerFacebook',
         'QForm',
         'QToggle',
-        'QField'
+        'QField',
+        'QSeparator',
+        'QBtnDropdown'
       ],
 
       directives: [
