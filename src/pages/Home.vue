@@ -129,7 +129,7 @@
                       class="btn-action"
                       icon="visibility"
                       size="sm"
-                      @click="onView(props.row)"
+                      @click="onView(props.row), loadChildrenData()"
                     />
                   </q-td>
                 </q-tr>
@@ -194,11 +194,11 @@
           <div class="text-h6 text-white">Create Children</div>
         </q-card-section>
         <q-card-section style="padding-top: 16px;">
-          <q-input v-model="Person.children.childId" filled type="text" hint="Child ID"/>
+          <q-input v-model="children.childId" filled type="text" hint="Child ID"/>
           <br>
-          <q-input v-model="Person.children.childName" filled autogrow hint="Name"/>
+          <q-input v-model="children.childName" filled autogrow hint="Name"/>
           <br>
-          <q-input v-model="Person.children.personAge" filled autogrow hint="Age"/>
+          <q-input v-model="children.childAge" filled autogrow hint="Age"/>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat :loading="loading" @click="executeCreateChildren()">
@@ -285,7 +285,7 @@
                   <q-table
                     class="my-sticky-column-table"
                     title="Children"
-                    :data="data"
+                    :data="childrenData"
                     :columns="columnsChild"
                     row-key="name"
                   >
@@ -376,7 +376,8 @@ export default {
       children: {
         childId: "",
         childName: "",
-        childAge: ""
+        childAge: "",
+        personId: ""
       },
 
       AuthorizationModel: {
@@ -444,7 +445,8 @@ export default {
         }
       ],
 
-      data: []
+      data: [],
+      childrenData: []
     };
   },
 
@@ -515,11 +517,34 @@ export default {
 
           personId: this.Person.personId,
           personName: this.Person.personName,
-          personAge: this.Person.personAge
+          personAge: this.Person.personAge,
+          children: this.Person.children
         })
         .then(response => {
           console.log(JSON.stringify(response));
           this.data = response["data"];
+        })
+        .catch(error => console.log(error));
+    },
+
+    loadChildrenData() {
+      var url = "http://localhost:8080/getChildren/" + this.Person.personId;
+      axios
+        .get(url, {
+          method: "GET",
+          headers: {
+            "Content-type": "application/json; charset=UTF-8",
+            "Access-Control-Allow-Origin": "*"
+          },
+
+          childId: this.children.childId,
+          childName: this.children.childName,
+          childAge: this.children.childAge,
+          personId: this.Person.personId
+        })
+        .then(response => {
+          console.log(JSON.stringify(response));
+          this.childrenData = response["data"];
         })
         .catch(error => console.log(error));
     },
@@ -556,11 +581,12 @@ export default {
 
     executeCreateChildren() {
       this.loading = true;
-      var url = "http://localhost:8080/setChild/"+this.person_id;
+      var url = "http://localhost:8080/setChild/" + this.Person.personId;
       const data = {
         childId: this.children.childId,
         childName: this.children.childName,
-        childAge: this.children.childAge
+        childAge: this.children.childAge,
+        personId: this.Person.personId
       };
       console.log(url);
       console.log(this.children.childId);
@@ -569,13 +595,12 @@ export default {
       axios
         .post(url, data)
         .then(response => {
-          console.log(response);
           this.loading = false;
-          this.createDialog = false;
+          this.createChildrenDialog = false;
         })
         .then(response => {
           this.alertSuccess = true;
-          this.executeView();
+          this.loadChildrenData();
         })
         .catch(error => {
           console.log(error);
